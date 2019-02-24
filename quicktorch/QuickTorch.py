@@ -363,7 +363,6 @@ class QuickTorch(torch.nn.Module):
             The path from where the model will be loaded 
         """
 
-
         state_dict = torch.load(path)
         self._step = state_dict["_step"]
         self._batch_size = state_dict["_batch_size"]
