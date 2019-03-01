@@ -22,33 +22,21 @@ class QuickTorchTest(QuickTorch):
 
             "relu": torch.nn.ReLU(),
 
-            "linear1": torch.nn.Linear(13, 30),
-            "batchnorm1": torch.nn.BatchNorm1d(30),
+            "linear1": torch.nn.Linear(13, 10),
+            "batchnorm1": torch.nn.BatchNorm1d(10),
             "dropout1": torch.nn.Dropout(.4),
 
-            "linear2": torch.nn.Linear(30, 25),
-            "batchnorm2": torch.nn.BatchNorm1d(25),
+            "linear2": torch.nn.Linear(10, 8),
+            "batchnorm2": torch.nn.BatchNorm1d(8),
             "dropout2": torch.nn.Dropout(.4),
 
-            "linear3": torch.nn.Linear(25, 20),
-            "batchnorm3": torch.nn.BatchNorm1d(20),
+            "linear3": torch.nn.Linear(8, 5),
+            "batchnorm3": torch.nn.BatchNorm1d(5),
             "dropout3": torch.nn.Dropout(.4),
 
-            "linear4": torch.nn.Linear(20, 15),
-            "batchnorm4": torch.nn.BatchNorm1d(15),
-            "dropout4": torch.nn.Dropout(.4),
+            "linear4": torch.nn.Linear(5, 1)
 
-            "linear5": torch.nn.Linear(15, 8),
-            "batchnorm5": torch.nn.BatchNorm1d(8),
-            "dropout5": torch.nn.Dropout(.4),
-
-            "linear6": torch.nn.Linear(8, 5),
-            "batchnorm6": torch.nn.BatchNorm1d(5),
-            "dropout6": torch.nn.Dropout(.4),
-
-            "linear7": torch.nn.Linear(5, 1)
-
-        }, batch_size=batch_size, lr=.001, decay=False)
+        }, batch_size=batch_size, lr=.001, decay=True)
 
     # --------------------------------------------------------------------
     def forward(self, input):
@@ -69,21 +57,6 @@ class QuickTorchTest(QuickTorch):
         X = self.dropout3(X)
         
         X = self.linear4(X)
-        X = self.relu(X)
-        X = self.batchnorm4(X)
-        X = self.dropout4(X)
-
-        X = self.linear5(X)
-        X = self.relu(X)
-        X = self.batchnorm5(X)
-        X = self.dropout5(X)
-
-        X = self.linear6(X)
-        X = self.relu(X)
-        X = self.batchnorm6(X)
-        X = self.dropout6(X)
-        
-        X = self.linear7(X)
 
         return X
 
@@ -111,8 +84,8 @@ class BostonHousingTest(unittest.TestCase):
         # NN handler;
         qt = QuickTorchTest(64)
         qt.visualize(torch.from_numpy(x_test).float())
-        qt.epoch(x_train, y_train, x_test, y_test, epochs=1000)
-        qt.saveModel("./output/logic.model")
+        qt.epoch(x_train, y_train, x_test, y_test, epochs=2000)
+        qt.saveModel()
 
         # analyze output;
         y_hat = qt.predict(torch.from_numpy(x_test).float()).tolist()
@@ -128,8 +101,8 @@ class BostonHousingTest(unittest.TestCase):
                 name = "Pred"
             )], filename="./output/test.html", auto_open=False)
 
-        self.assertLessEqual(qt._loss_epoch_history[-1], .5)
-        print("  ", qt._loss_epoch_history[-1], .5)
+        self.assertLessEqual(qt._stats["loss_epoch"][-1], .5)
+        print("  ", qt._stats["loss_epoch"][-1], .5)
 
 ################################################################################
 if __name__ == '__main__':

@@ -156,8 +156,8 @@ class BostonHousingTest(unittest.TestCase):
         # NN handler;
         qt = QuickTorchTest(64)
         qt.visualize(torch.from_numpy(x_test).float())
-        qt.epoch(x_train, y_train, x_test, y_test, epochs=1000)
-        qt.saveModel("./output/logic.model")
+        qt.epoch(x_train, y_train, x_test, y_test, epochs=2000)
+        qt.saveModel()
 
         # analyze output;
         y_hat = qt.predict(torch.from_numpy(x_test).float()).tolist()
@@ -173,8 +173,8 @@ class BostonHousingTest(unittest.TestCase):
                 name = "Pred"
             )], filename="./output/test.html", auto_open=False)
 
-        self.assertLessEqual(qt._loss_epoch_history[-1], .5)
-        print("  ", qt._loss_epoch_history[-1], .5)
+        self.assertLessEqual(qt._stats["loss_epoch"][-1], .5)
+        print("  ", qt._stats["loss_epoch"][-1], .5)
 
 ################################################################################
 if __name__ == '__main__':
