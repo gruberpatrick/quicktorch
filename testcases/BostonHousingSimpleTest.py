@@ -8,17 +8,18 @@ from sklearn.preprocessing import StandardScaler
 import plotly.plotly as py
 import plotly.graph_objs as go
 from plotly.offline import plot
+import numpy as np
 
 sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
 from quicktorch.QuickTorch import QuickTorch
 
 ##########################################################################
-class QuickTorchTest(QuickTorch):
+class BostonHousingSimpleTest(QuickTorch):
 
     # --------------------------------------------------------------------
     def __init__(self, batch_size):
 
-        super(QuickTorchTest, self).__init__({
+        super(BostonHousingSimpleTest, self).__init__({
 
             "relu": torch.nn.ReLU(),
 
@@ -36,7 +37,7 @@ class QuickTorchTest(QuickTorch):
 
             "linear4": torch.nn.Linear(5, 1)
 
-        }, batch_size=batch_size, lr=.001, decay=True)
+        }, batch_size=batch_size, lr=.001, decay=False, decay_rate=.1)
 
     # --------------------------------------------------------------------
     def forward(self, input):
@@ -82,24 +83,17 @@ class BostonHousingTest(unittest.TestCase):
         y_test = out_scaler.transform(y_test)
 
         # NN handler;
-        qt = QuickTorchTest(64)
+        qt = BostonHousingSimpleTest(64)
         qt.visualize(torch.from_numpy(x_test).float())
-        qt.epoch(x_train, y_train, x_test, y_test, epochs=2000)
+        qt.epoch(
+            np.array(x_train, dtype=np.float32), 
+            np.array(y_train, dtype=np.float32), 
+            np.array(x_test, dtype=np.float32), 
+            np.array(y_test, dtype=np.float32), 
+            epochs=1
+        )
         qt.saveModel()
-
-        # analyze output;
-        y_hat = qt.predict(torch.from_numpy(x_test).float()).tolist()
-        plot([go.Scatter(
-                x = list(range(len(y_test.tolist()))),
-                y = [it[0] for it in out_scaler.inverse_transform(y_test)],
-                mode = "markers",
-                name = "Actual"
-            ), go.Scatter(
-                x = list(range(len(y_hat))),
-                y = [it[0] for it in out_scaler.inverse_transform(y_hat)],
-                mode = "markers",
-                name = "Pred"
-            )], filename="./output/test.html", auto_open=False)
+        qt.showNNStats()
 
         self.assertLessEqual(qt._stats["loss_epoch"][-1], .5)
         print("  ", qt._stats["loss_epoch"][-1], .5)

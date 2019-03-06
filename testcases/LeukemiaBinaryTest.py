@@ -11,12 +11,12 @@ sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
 from quicktorch.QuickTorch import QuickTorch
 
 ##########################################################################
-class LeukemiaClassTest(QuickTorch):
+class LeukemiaBinaryTest(QuickTorch):
 
     # --------------------------------------------------------------------
     def __init__(self, batch_size):
 
-        super(LeukemiaClassTest, self).__init__({
+        super(LeukemiaBinaryTest, self).__init__({
 
             "relu": torch.nn.ReLU(),
 
@@ -88,7 +88,7 @@ class LeukemiaClassTest(QuickTorch):
         return X
 
 ##########################################################################
-class BinaryTest(unittest.TestCase):
+class LeukemiaTest(unittest.TestCase):
 
     # --------------------------------------------------------------------
     def testModel(self):
@@ -96,8 +96,8 @@ class BinaryTest(unittest.TestCase):
         print("=======================================\n  testModel")
 
         fh = h5py.File("./testcases/leukemia.hdf5", "r")
-        x = np.array(fh["features"])
-        y = np.array(fh["predictions"])
+        x = np.array(fh["features"], dtype=np.float32)
+        y = np.array(fh["predictions"], dtype=np.float32)
         y = y.reshape((y.shape[0], 1))
         x_train = x[:29]
         y_train = y[:29]
@@ -105,10 +105,11 @@ class BinaryTest(unittest.TestCase):
         y_test = y[29:]
 
         # NN handler;
-        qt = LeukemiaClassTest(64)
+        qt = LeukemiaBinaryTest(64)
         qt.visualize(torch.from_numpy(x_test).float())
-        qt.epoch(x_train, y_train, x_test, y_test, epochs=40)
+        qt.epoch(x_train, y_train, x_test, y_test, epochs=160)
         qt.saveModel()
+        qt.showNNStats()
 
         self.assertGreaterEqual(qt._stats["acc_epoch"][-1], .8)
 

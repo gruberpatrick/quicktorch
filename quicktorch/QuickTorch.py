@@ -40,6 +40,7 @@ class QuickTorch(torch.nn.Module):
         "acc_validation": [],
         "lr": []
     }
+    _layers = []
 
     # --------------------------------------------------------------------
     def __init__(self, tensors, loss=torch.nn.MSELoss, lr=.001, decay_rate=.5, 
@@ -72,7 +73,9 @@ class QuickTorch(torch.nn.Module):
 
         # initialize tensors;
         super(QuickTorch, self).__init__()
-        for it in tensors: setattr(self, it, tensors[it])
+        for it in tensors:
+            setattr(self, it, tensors[it])
+            self._layers.append(it)
         self.initializeWeights(weight_init, tensors)
 
         # initialize decay and loss;
@@ -352,6 +355,19 @@ class QuickTorch(torch.nn.Module):
 
             print("\t\r[%5d / %5d] loss: %8.4f, val_loss: %8.4f\tacc: %8.4f, val_acc: %8.4f" % 
                 (epoch+1, epochs, (sum_loss/minibatch_count), loss, self._stats["acc_epoch"][-1]*100, self._stats["acc_validation"][-1]*100))
+
+    # -----------------------------------------------------------
+    def showNNStats(self, attributes=["weight", "bias"]):
+        """ Visualize network layer weights
+
+        Users tensorflow to display some of the basic NN structure
+        information to better understand weight distribution.
+        """
+
+        for layer in self._layers:
+            for att in attributes:
+                try: self._writer.add_histogram(layer + "_weight", getattr(getattr(self, layer), att))
+                except: pass
 
     # -----------------------------------------------------------
     def exportStats(self):
