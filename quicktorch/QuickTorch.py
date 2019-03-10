@@ -41,6 +41,9 @@ class QuickTorch(torch.nn.Module):
         "lr": []
     }
     _layers = []
+    _env = None
+    _score = 0
+    _state = None
 
     # --------------------------------------------------------------------
     def __init__(self, tensors, loss=torch.nn.MSELoss, lr=.001, decay_rate=.5, 
@@ -92,6 +95,7 @@ class QuickTorch(torch.nn.Module):
         # create project folder;
         try: os.mkdir("./output/" + self._name + "/")
         except: pass
+        print("Creating writer: ", "./output/" + self._name + "/" + self._timestamp + "_tb/")
         self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
         
     # --------------------------------------------------------------------
@@ -112,7 +116,7 @@ class QuickTorch(torch.nn.Module):
             Returns the modified tensor after forward propagation
         """
 
-        print("[ERROR] Not implemented.")
+        print("[ERROR] Function 'forward' not implemented.")
         return input
 
     # --------------------------------------------------------------------
@@ -169,12 +173,13 @@ class QuickTorch(torch.nn.Module):
         y_hat : torch.Tensor
             Output values encoded as pytorch tensor
         """
+
+        self._optimizer.zero_grad()
         
         # training step;
         y_hat = self(x)
         loss = self._loss(y_hat, y)
 
-        self._optimizer.zero_grad()
         loss.backward()
         self._optimizer.step()
 
@@ -262,7 +267,6 @@ class QuickTorch(torch.nn.Module):
     # -----------------------------------------------------------
     def visualize(self, x):
         """ Visualize network
-
         Exports a PDF displaying the neural network strcuture.
         """
 
@@ -292,9 +296,12 @@ class QuickTorch(torch.nn.Module):
             Save the best model according to values in _state
         """
 
+        best = {"acc": -np.inf, "loss": np.inf, "acc_validation": -np.inf, "loss_validation": np.inf, "trigger": ""}
         self._epoch = 0
         self._total_epochs = epochs
         for epoch in range(self._epoch, self._total_epochs):
+
+            best["trigger"] = ""
 
             self._epoch = epoch
             self._loss_batch_history = []
@@ -346,6 +353,24 @@ class QuickTorch(torch.nn.Module):
                 loss, acc, _ = self.test(data[0], data[1])
                 validation_loss.append(loss)
                 validation_acc.append(acc)
+
+            # save the current best scores;
+            if self._score > best["acc"]:
+                best["acc"] = self._stats["acc_epoch"][-1]
+                best["trigger"] = "acc"
+            if self._step < best["loss"]:
+                best["loss"] = self._stats["loss_epoch"][-1]
+                best["trigger"] = "loss"
+            if self._step < best["loss_validation"]:
+                best["loss_validation"] = sself._stats["loss_validation"][-1]
+                best["trigger"] = "loss_validation"
+            if self._step > best["acc_validation"]:
+                best["acc_validation"] = self._stats["acc_validation"][-1]
+                best["trigger"] = "acc_validation"
+
+            if save_best != "" and best["trigger"] == save_best:
+                self.saveModel()
+                print("New model saved...")
 
             #self._loss_validation_history.append(loss)
             self._stats["loss_validation"].append(np.array(validation_loss).mean())
@@ -449,4 +474,77 @@ class QuickTorch(torch.nn.Module):
         self._decay = state_dict["_decay"]
         self._stats = state_dict["_stats"]
         self.load_state_dict(state_dict["_state_dict"])
+
+    # -----------------------------------------------------------
+    def saveModel(self):
+        """ Save model
+        Save the current model to the given path.
+        Parameters
+        ----------
+        path : str
+            The path to where the model will be saved 
+        """
+
+        state_dict = {"_state_dict": self.state_dict()}
+        state_dict["_step"] = self._step
+        state_dict["_batch_size"] = self._batch_size
+        state_dict["_lr"] = self._lr
+        state_dict["_decay_rate"] = self._decay_rate
+        state_dict["_decay_steps"] = self._decay_steps
+        state_dict["_optimizer"] = self._optimizer
+        state_dict["_decay"] = self._decay
+        state_dict["_stats"] = self._stats
+        torch.save(state_dict, "./output/" + self._name + "/" + self._timestamp + ".model")
+        
+    # -----------------------------------------------------------
+    def run_episode(self):
+
+        print("[ERROR] Function 'run_episode' not implemented.")
+        return
+
+    # -----------------------------------------------------------
+    def episode(self, episodes, save_best="", load_best=""):
+
+        best = {"score": -np.inf, "step": -np.inf, "trigger": []}
+        scores = []
+        try:
+
+            for episode in range(episodes):
+
+                best["trigger"] = []
+
+                # run reinforcement learning;
+                loss, acc = self.run_episode(episode=episode)
+                scores.append(self._score)
+
+                # save the current best scores;
+                if self._score > best["score"]:
+                    best["score"] = self._score
+                    best["trigger"].append("score")
+                if self._step > best["step"]:
+                    best["step"] = self._step
+                    best["trigger"].append("step")
+
+                # output statements;
+                print("[%5d / %5d] Score: %8.4f - Steps: %8.4f - Best Score: %8.4f" % \
+                    ((episode + 1), episodes, self._score, self._step, self._best_score))
+                
+                # save best results;
+                if save_best != "" and save_best in best["trigger"]:
+                    self.saveModel()
+                    print("  New model saved...")
+
+                if load_best == "score" and self._score < best["score"]:
+                    try:
+                        self.loadModel("./output/" + self._name + "/" + self._timestamp + ".model")
+                        print("  Model reset...")
+                        continue
+                    except: pass
+
+                self._writer.add_scalar(self._name + "/score", self._score, episode)
+                self._writer.add_scalar(self._name + "/steps", self._step, episode)
+                self._writer.add_scalar(self._name + "/loss", loss, episode)
+                #self._writer.add_scalar(self._name + "/acc", acc, episode)
+
+        except KeyboardInterrupt: print(" Finishing...")
 
