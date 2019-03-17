@@ -2,9 +2,6 @@
 import torch
 import math
 import numpy as np
-import plotly.plotly as py
-import plotly.graph_objs as go
-from plotly.offline import plot
 from torchviz import make_dot
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
@@ -91,12 +88,6 @@ class QuickTorch(torch.nn.Module):
         self._loss = loss()
         self._name = type(self).__name__
         self._accuracy = accuracy
-
-        # create project folder;
-        try: os.mkdir("./output/" + self._name + "/")
-        except: pass
-        print("Creating writer: ", "./output/" + self._name + "/" + self._timestamp + "_tb/")
-        self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
         
     # --------------------------------------------------------------------
     def forward(self, input):
@@ -296,7 +287,13 @@ class QuickTorch(torch.nn.Module):
             Save the best model according to values in _state
         """
 
-        best = {"acc": -np.inf, "loss": np.inf, "acc_validation": -np.inf, "loss_validation": np.inf, "trigger": ""}
+        # create project folder;
+        try: os.mkdir("./output/" + self._name + "/")
+        except: pass
+        print("Creating writer: ", "./output/" + self._name + "/" + self._timestamp + "_tb/")
+        self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
+
+        best = {"acc": -np.inf, "loss": np.inf, "acc_validation": -np.inf, "loss_validation": np.inf, "trigger": []}
         self._epoch = 0
         self._total_epochs = epochs
         for epoch in range(self._epoch, self._total_epochs):
@@ -357,18 +354,18 @@ class QuickTorch(torch.nn.Module):
             # save the current best scores;
             if self._score > best["acc"]:
                 best["acc"] = self._stats["acc_epoch"][-1]
-                best["trigger"] = "acc"
+                best["trigger"].append("acc")
             if self._step < best["loss"]:
                 best["loss"] = self._stats["loss_epoch"][-1]
-                best["trigger"] = "loss"
+                best["trigger"].append("loss")
             if self._step < best["loss_validation"]:
                 best["loss_validation"] = sself._stats["loss_validation"][-1]
-                best["trigger"] = "loss_validation"
+                best["trigger"].append("loss_validation")
             if self._step > best["acc_validation"]:
                 best["acc_validation"] = self._stats["acc_validation"][-1]
-                best["trigger"] = "acc_validation"
+                best["trigger"].append("acc_validation")
 
-            if save_best != "" and best["trigger"] == save_best:
+            if save_best != "" and save_best in best["trigger"]:
                 self.saveModel()
                 print("New model saved...")
 
@@ -393,41 +390,6 @@ class QuickTorch(torch.nn.Module):
             for att in attributes:
                 try: self._writer.add_histogram(layer + "_weight", getattr(getattr(self, layer), att))
                 except: pass
-
-    # -----------------------------------------------------------
-    def exportStats(self):
-        """ Visualize network training performance
-
-        Exports a HTML plotly file that allows exploration of
-        network performance.
-        """
-
-        xs = []
-        grouped_epoch_history = []
-        grouped_validation_history = []
-
-        for it in range(0, len(self._stats["loss_epoch"]), self._graph_group_size):
-            grouped_epoch_history.append( np.mean(np.array(self._stats["loss_epoch"][it:it+self._graph_group_size])).tolist() )
-            grouped_validation_history.append( np.mean(np.array(self._stats["loss_validation"][it:it+self._graph_group_size])).tolist() )
-            xs.append(it + (self._graph_group_size / 2))
-
-        plot([go.Scatter(
-            x = list(range(len(self._stats["loss_epoch"]))),
-            y = self._stats["loss_epoch"],
-            name = "Epoch Training Loss"
-        ), go.Scatter(
-            x = list(range(len(self._stats["loss_validation"]))),
-            y = self._stats["loss_validation"],
-            name = "Epoch Validation Loss"
-        ), go.Scatter(
-            x = xs,
-            y = grouped_epoch_history,
-            name = "Grouped Training Loss"
-        ), go.Scatter(
-            x = xs,
-            y = grouped_validation_history,
-            name = "Grouped Validation Loss"
-        )], filename="./output/training.html", auto_open=False)
 
     # -----------------------------------------------------------
     def saveModel(self):
@@ -504,6 +466,12 @@ class QuickTorch(torch.nn.Module):
 
     # -----------------------------------------------------------
     def episode(self, episodes, save_best="", load_best=""):
+
+        # create project folder;
+        try: os.mkdir("./output/" + self._name + "/")
+        except: pass
+        print("Creating writer: ", "./output/" + self._name + "/" + self._timestamp + "_tb/")
+        self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
 
         best = {"score": -np.inf, "step": -np.inf, "trigger": []}
         scores = []

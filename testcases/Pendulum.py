@@ -8,13 +8,38 @@ import pandas as pd
 import gym
 from collections import deque
 import random
+import copy
 
 sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
 from quicktorch.QuickTorch import QuickTorch
 from quicktorch.Utils import Utils
 
 ##########################################################################
-class LunarLander(QuickTorch):
+class OUNoise:
+
+    # --------------------------------------------------------------------
+    def __init__(self, size, mu, theta, sigma):
+        """Initialize parameters and noise process."""
+        self.mu = mu * np.ones(size)
+        self.theta = theta
+        self.sigma = sigma
+        self.reset()
+
+    # --------------------------------------------------------------------
+    def reset(self):
+        """Reset the internal state (= noise) to mean (mu)."""
+        self.state = copy.copy(self.mu)
+
+    # --------------------------------------------------------------------
+    def sample(self):
+        """Update internal state and return it as a noise sample."""
+        x = self.state
+        dx = self.theta * (self.mu - x) + self.sigma * np.random.randn(len(x))
+        self.state = x + dx
+        return self.state
+
+##########################################################################
+class Pendulum(QuickTorch):
 
     _epsilon = 1.0
     _epsilon_min = 0.01
@@ -28,21 +53,20 @@ class LunarLander(QuickTorch):
     # --------------------------------------------------------------------
     def __init__(self):
 
-        self._env = gym.make("LunarLander-v2")
-        self._action_size = self._env.action_space.n
+        self._env = gym.make("Pendulum-v0")
+        self._action_size = 1
         self._state_size = self._env.observation_space.shape[0]
 
-        super(LunarLander, self).__init__({
+        super(Pendulum, self).__init__({
 
             "relu": torch.nn.ReLU(),
             "fc1" : torch.nn.Linear(self._state_size, 32),
             "fc2" : torch.nn.Linear(32, 64),
             "fc3" : torch.nn.Linear(64, 32),
             "fc4" : torch.nn.Linear(32, self._action_size),
-            "relu" : torch.nn.ReLU(),
-            "softmax": torch.nn.Softmax(dim=1)
+            "relu" : torch.nn.ReLU()
 
-        }, lr=.0025, decay=False, loss=torch.nn.CrossEntropyLoss, batch_size=100)
+        }, lr=.001, decay=False, loss=torch.nn.MSELoss, batch_size=100)
 
     # --------------------------------------------------------------------
     def forward(self, X):
@@ -75,13 +99,14 @@ class LunarLander(QuickTorch):
         batch_actions = []
         batch_rewards = []
         batch_steps = []
+        batch_noise = []
 
         self._stats["actions"] = [0,0,0,0]
 
         for batch in range(self._batch_size):
 
             # start a new episode
-            state = self.reset()
+            state = self.reset().T
             states = []
             actions = []
             total_reward = 0
@@ -93,13 +118,14 @@ class LunarLander(QuickTorch):
                 # run state through the NN and compute most likely action to take
                 if self._epsilon < np.random.rand():
                     s = torch.Tensor([state]).float()
-                    prob = np.array(self.softmax(self(s))[0].tolist())
-                    prob /= prob.sum()
-                    action = np.random.choice(len(prob), p=prob)
+                    action = np.array(self(s)[0].tolist())
                 else:
-                    action = np.random.randint(self._action_size)
+                    action = np.random.normal(0,1,1)
 
-                self._stats["actions"][action] += 1
+                noise = self.noise.sample()
+                batch_noise.append(noise)
+                action += noise
+                action = np.clip(action, -2, 2)
 
                 # perform action and keep track of outcome
                 next_state, reward, done, info = self._env.step(action)
@@ -108,7 +134,7 @@ class LunarLander(QuickTorch):
                 total_reward += reward
 
                 # set new state
-                state = next_state
+                state = next_state.T
                 steps += 1
 
                 # add batch for training
@@ -120,7 +146,7 @@ class LunarLander(QuickTorch):
 
             if self._epsilon > self._epsilon_min: self._epsilon *= self._epsilon_decay
 
-        return batch_states, batch_actions, batch_rewards, batch_steps
+        return batch_states, batch_actions, batch_rewards, batch_steps, batch_noise
 
     # --------------------------------------------------------------------
     def getBestBatches(self, batch_states, batch_actions, batch_rewards, percentile):
@@ -146,14 +172,14 @@ class LunarLander(QuickTorch):
     # --------------------------------------------------------------------
     def run_episode(self, episode=0):
 
-        batch_states, batch_actions, batch_rewards, batch_steps = self.generateBatches()
+        batch_states, batch_actions, batch_rewards, batch_steps, batch_noise = self.generateBatches()
         top_states, top_actions, top_rewards, threshold = self.getBestBatches(batch_states, batch_actions, batch_rewards, percentile=80)
 
         if len(top_states) == 0: return -1, -1
 
         loss, acc, _ = self.train(
             torch.Tensor(np.array(top_states, dtype=np.float32)).float(),
-            torch.Tensor(np.array(top_actions, dtype=np.int64)).long()
+            torch.Tensor(np.array(top_actions, dtype=np.float32).reshape(len(top_actions), 1)).float()
         )
         self._stats["loss_batch"].append(loss)
         self._stats["acc_batch"].append(acc)
@@ -166,12 +192,15 @@ class LunarLander(QuickTorch):
         self._writer.add_scalar(self._name + "/threshold", self._threshold, episode)
         self._writer.add_scalar(self._name + "/epsilon", self._epsilon, episode)
         self._writer.add_scalar(self._name + "/batch_size", len(top_states), episode)
+        self._writer.add_scalar(self._name + "/batch_noise", np.mean(batch_noise), episode)
 
         mean_loss = np.mean(self._stats["loss_batch"])
         mean_acc = np.mean(self._stats["acc_batch"])
 
         self._stats["loss_batch"] = []
         self._stats["acc_batch"] = []
+
+        if self.noise: self.noise.reset()
 
         return mean_loss, mean_acc
 
@@ -183,25 +212,27 @@ class LunarLander(QuickTorch):
         while not done:
 
             s = torch.Tensor([state]).float()
-
-            probabilities = self(s)
-            prob = np.array(probabilities[0].tolist())
-            action = np.argmax(prob)
-
+            action = np.array(self(s)[0].tolist())
             next_state, reward, done, info = self._env.step(action)
 
             state = next_state
             self._env.render()
 
 ##########################################################################
-class LunarLanderTest(unittest.TestCase):
+class PendulumTest(unittest.TestCase):
 
     # --------------------------------------------------------------------
     def testModel(self):
 
+        self.exploration_mu = 0
+        self.exploration_theta = 0.095
+        self.exploration_sigma = 0.09
+        self.noise = OUNoise(1, self.exploration_mu, self.exploration_theta, self.exploration_sigma)
+
         print("=======================================\n  testModel")
 
-        qt = LunarLander()
+        qt = Pendulum()
+        qt.noise = self.noise
         qt.episode(2000, save_best="score", load_best="")
 
         #qt.loadModel("./output/LunarLander/1552254905.model")
