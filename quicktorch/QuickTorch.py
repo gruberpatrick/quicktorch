@@ -97,6 +97,9 @@ class QuickTorch(torch.nn.Module):
         self._name = type(self).__name__
         self._accuracy = accuracy
 
+        # overwrite the timestamp, to make it usable in a notebook;
+        self._timestamp = str(int(time.time()))
+
     # --------------------------------------------------------------------
     def forward(self, input):
         """ Forward definition

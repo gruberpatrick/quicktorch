@@ -20,6 +20,7 @@ class MyModel(QuickTorch):
     def forward(self, input):
         X = input
         return X
+
 model = MyModel()
 model.visualize(torch.from_numpy(x_test).float())
 model.epoch(x_train, y_train, x_test, y_test, epochs=1000)
