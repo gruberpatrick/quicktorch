@@ -28,7 +28,7 @@ model.saveModel("./output/logic.model")
 
 ```
 
-## Explaination
+## Documentation
 
 Each run of a model creates an output folder, and a project subdirectory. In the above example that would be `./ouput/MyModel`.
 
