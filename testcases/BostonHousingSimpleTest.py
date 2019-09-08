@@ -81,7 +81,7 @@ class BostonHousingTest(unittest.TestCase):
 
         # NN handler;
         qt = BostonHousingSimpleTest(64)
-        # qt.visualize(torch.from_numpy(x_test).float())
+        qt.visualize(torch.from_numpy(x_test).float())
         qt.epoch(
             np.array(x_train, dtype=np.float32),
             np.array(y_train, dtype=np.float32),

@@ -43,7 +43,7 @@ class QuickTorch(torch.nn.Module):
     # --------------------------------------------------------------------
     def __init__(
         self,
-        tensors,
+        layers,
         loss=torch.nn.MSELoss,
         lr=0.001,
         decay_rate=0.5,
@@ -57,7 +57,7 @@ class QuickTorch(torch.nn.Module):
         """
         Parameters
         ----------
-        tensors : dict
+        layers : dict
             The tensor layers that are used in the model
         loss : torch.nn (default = torch.nn.MSELoss)
             The loss to be initialized for the model
@@ -75,16 +75,16 @@ class QuickTorch(torch.nn.Module):
             The backprop optimizer
         batch_size : int (default = 32)
             Batch size used during training
-        accuracy : string
+        accuracy : string (default = None)
             binary / categorical / None
         """
 
         # initialize tensors;
         super(QuickTorch, self).__init__()
-        for it in tensors:
-            setattr(self, it, tensors[it])
+        for it in layers:
+            setattr(self, it, layers[it])
             self._layers.append(it)
-        self.initializeWeights(weight_init, tensors)
+        self.initializeWeights(weight_init, layers)
 
         # initialize decay and loss;
         self._batch_size = batch_size
@@ -297,6 +297,8 @@ class QuickTorch(torch.nn.Module):
             Amount of epochs to run
         save_best : str
             Save the best model according to values in _state
+        strict_batchsize : bool
+            Whether batches with # of samples < batch_size can be used
         """
 
         # create project folder;
