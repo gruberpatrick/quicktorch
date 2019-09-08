@@ -1,4 +1,3 @@
-
 import torch
 import unittest
 import sys
@@ -7,7 +6,7 @@ import numpy as np
 
 import h5py
 
-sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from quicktorch.QuickTorch import QuickTorch
 
 ##########################################################################
@@ -16,38 +15,36 @@ class LeukemiaBinaryTest(QuickTorch):
     # --------------------------------------------------------------------
     def __init__(self, batch_size):
 
-        super(LeukemiaBinaryTest, self).__init__({
-
-            "relu": torch.nn.ReLU(),
-
-            "linear1": torch.nn.Linear(7129, 5000),
-            "batchnorm1": torch.nn.BatchNorm1d(5000),
-            "dropout1": torch.nn.Dropout(.6),
-
-            "linear2": torch.nn.Linear(5000, 2048),
-            "batchnorm2": torch.nn.BatchNorm1d(2048),
-            "dropout2": torch.nn.Dropout(.6),
-
-            "linear3": torch.nn.Linear(2048, 1024),
-            "batchnorm3": torch.nn.BatchNorm1d(1024),
-            "dropout3": torch.nn.Dropout(.6),
-
-            "linear4": torch.nn.Linear(1024, 512),
-            "batchnorm4": torch.nn.BatchNorm1d(512),
-            "dropout4": torch.nn.Dropout(.6),
-
-            "linear5": torch.nn.Linear(512, 256),
-            "batchnorm5": torch.nn.BatchNorm1d(256),
-            "dropout5": torch.nn.Dropout(.6),
-
-            "linear6": torch.nn.Linear(256, 128),
-            "batchnorm6": torch.nn.BatchNorm1d(128),
-            "dropout6": torch.nn.Dropout(.6),
-
-            "output": torch.nn.Linear(128, 1),
-            "sig": torch.nn.Sigmoid()
-
-        }, batch_size=batch_size, lr=.0001, decay=True, loss=torch.nn.BCELoss, accuracy="binary")
+        super(LeukemiaBinaryTest, self).__init__(
+            {
+                "relu": torch.nn.ReLU(),
+                "linear1": torch.nn.Linear(7129, 5000),
+                "batchnorm1": torch.nn.BatchNorm1d(5000),
+                "dropout1": torch.nn.Dropout(0.6),
+                "linear2": torch.nn.Linear(5000, 2048),
+                "batchnorm2": torch.nn.BatchNorm1d(2048),
+                "dropout2": torch.nn.Dropout(0.6),
+                "linear3": torch.nn.Linear(2048, 1024),
+                "batchnorm3": torch.nn.BatchNorm1d(1024),
+                "dropout3": torch.nn.Dropout(0.6),
+                "linear4": torch.nn.Linear(1024, 512),
+                "batchnorm4": torch.nn.BatchNorm1d(512),
+                "dropout4": torch.nn.Dropout(0.6),
+                "linear5": torch.nn.Linear(512, 256),
+                "batchnorm5": torch.nn.BatchNorm1d(256),
+                "dropout5": torch.nn.Dropout(0.6),
+                "linear6": torch.nn.Linear(256, 128),
+                "batchnorm6": torch.nn.BatchNorm1d(128),
+                "dropout6": torch.nn.Dropout(0.6),
+                "output": torch.nn.Linear(128, 1),
+                "sig": torch.nn.Sigmoid(),
+            },
+            batch_size=batch_size,
+            lr=0.0001,
+            decay=True,
+            loss=torch.nn.BCELoss,
+            accuracy="binary",
+        )
 
     # --------------------------------------------------------------------
     def forward(self, input):
@@ -60,7 +57,7 @@ class LeukemiaBinaryTest(QuickTorch):
         X = self.linear2(X)
         X = self.relu(X)
         X = self.batchnorm2(X)
-        #X = self.dropout2(X)
+        # X = self.dropout2(X)
 
         X = self.linear3(X)
         X = self.relu(X)
@@ -70,7 +67,7 @@ class LeukemiaBinaryTest(QuickTorch):
         X = self.linear4(X)
         X = self.relu(X)
         X = self.batchnorm4(X)
-        #X = self.dropout4(X)
+        # X = self.dropout4(X)
 
         X = self.linear5(X)
         X = self.relu(X)
@@ -80,12 +77,13 @@ class LeukemiaBinaryTest(QuickTorch):
         X = self.linear6(X)
         X = self.relu(X)
         X = self.batchnorm6(X)
-        #X = self.dropout6(X)
-        
+        # X = self.dropout6(X)
+
         X = self.output(X)
         X = self.sig(X)
 
         return X
+
 
 ##########################################################################
 class LeukemiaTest(unittest.TestCase):
@@ -111,7 +109,8 @@ class LeukemiaTest(unittest.TestCase):
         qt.saveModel()
         qt.showNNStats()
 
-        self.assertGreaterEqual(qt._stats["acc_epoch"][-1], .8)
+        self.assertGreaterEqual(qt._stats["acc_epoch"][-1], 0.8)
+
 
 ################################################################################
 if __name__ == '__main__':

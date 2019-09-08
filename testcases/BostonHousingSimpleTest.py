@@ -1,16 +1,12 @@
-
 import torch
 import unittest
 import sys
 from os import path
 from keras.datasets import boston_housing
 from sklearn.preprocessing import StandardScaler
-import plotly.plotly as py
-import plotly.graph_objs as go
-from plotly.offline import plot
 import numpy as np
 
-sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from quicktorch.QuickTorch import QuickTorch
 
 ##########################################################################
@@ -19,25 +15,25 @@ class BostonHousingSimpleTest(QuickTorch):
     # --------------------------------------------------------------------
     def __init__(self, batch_size):
 
-        super(BostonHousingSimpleTest, self).__init__({
-
-            "relu": torch.nn.ReLU(),
-
-            "linear1": torch.nn.Linear(13, 10),
-            "batchnorm1": torch.nn.BatchNorm1d(10),
-            "dropout1": torch.nn.Dropout(.4),
-
-            "linear2": torch.nn.Linear(10, 8),
-            "batchnorm2": torch.nn.BatchNorm1d(8),
-            "dropout2": torch.nn.Dropout(.4),
-
-            "linear3": torch.nn.Linear(8, 5),
-            "batchnorm3": torch.nn.BatchNorm1d(5),
-            "dropout3": torch.nn.Dropout(.4),
-
-            "linear4": torch.nn.Linear(5, 1)
-
-        }, batch_size=batch_size, lr=.001, decay=False, decay_rate=.1)
+        super(BostonHousingSimpleTest, self).__init__(
+            {
+                "relu": torch.nn.ReLU(),
+                "linear1": torch.nn.Linear(13, 10),
+                "batchnorm1": torch.nn.BatchNorm1d(10),
+                "dropout1": torch.nn.Dropout(0.4),
+                "linear2": torch.nn.Linear(10, 8),
+                "batchnorm2": torch.nn.BatchNorm1d(8),
+                "dropout2": torch.nn.Dropout(0.4),
+                "linear3": torch.nn.Linear(8, 5),
+                "batchnorm3": torch.nn.BatchNorm1d(5),
+                "dropout3": torch.nn.Dropout(0.4),
+                "linear4": torch.nn.Linear(5, 1),
+            },
+            batch_size=batch_size,
+            lr=0.001,
+            decay=False,
+            decay_rate=0.1,
+        )
 
     # --------------------------------------------------------------------
     def forward(self, input):
@@ -45,7 +41,7 @@ class BostonHousingSimpleTest(QuickTorch):
         X = self.linear1(input)
         X = self.relu(X)
         X = self.batchnorm1(X)
-        X = self.dropout1(X) 
+        X = self.dropout1(X)
 
         X = self.linear2(X)
         X = self.relu(X)
@@ -56,10 +52,11 @@ class BostonHousingSimpleTest(QuickTorch):
         X = self.relu(X)
         X = self.batchnorm3(X)
         X = self.dropout3(X)
-        
+
         X = self.linear4(X)
 
         return X
+
 
 ##########################################################################
 class BostonHousingTest(unittest.TestCase):
@@ -84,19 +81,20 @@ class BostonHousingTest(unittest.TestCase):
 
         # NN handler;
         qt = BostonHousingSimpleTest(64)
-        qt.visualize(torch.from_numpy(x_test).float())
+        # qt.visualize(torch.from_numpy(x_test).float())
         qt.epoch(
-            np.array(x_train, dtype=np.float32), 
-            np.array(y_train, dtype=np.float32), 
-            np.array(x_test, dtype=np.float32), 
-            np.array(y_test, dtype=np.float32), 
-            epochs=1
+            np.array(x_train, dtype=np.float32),
+            np.array(y_train, dtype=np.float32),
+            np.array(x_test, dtype=np.float32),
+            np.array(y_test, dtype=np.float32),
+            epochs=500,
         )
         qt.saveModel()
         qt.showNNStats()
 
-        self.assertLessEqual(qt._stats["loss_epoch"][-1], .5)
-        print("  ", qt._stats["loss_epoch"][-1], .5)
+        self.assertLessEqual(qt._stats["loss_epoch"][-1], 0.5)
+        print("  ", qt._stats["loss_epoch"][-1], 0.5)
+
 
 ################################################################################
 if __name__ == '__main__':

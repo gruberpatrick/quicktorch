@@ -1,8 +1,5 @@
-
 import re
-import plotly.plotly as py
-import plotly.graph_objs as go
-from plotly.offline import plot
+
 
 class Utils:
 
@@ -26,7 +23,7 @@ class Utils:
 
         try:
             words = line.split(" ")
-        except:
+        except Exception:
             print("[ERROR]", line)
             return False, counter
         sentence = []
@@ -49,23 +46,9 @@ class Utils:
         x = []
         for line in lines:
             sentence, counter = Utils.index(line, word_idx, idx_word, counter)
-            if not sentence: continue
+            if not sentence:
+                continue
             x.append(sentence)
-            if len(sentence) > longest: longest = len(sentence)
+            if len(sentence) > longest:
+                longest = len(sentence)
         return x, word_idx, idx_word, counter, longest
-
-    # -----------------------------------------------------------
-    def plotly(xs, ys, names, types=[], filename="output.html"):
-        """ Visualize network training performance
-
-        Exports a HTML plotly file that allows exploration of
-        network performance.
-        """
-
-        plots = []
-        for it in range(len(xs)):
-            plots.append(go.Scatter(x=xs[it], y=ys[it], name=names[it]))
-
-        plot(plots, filename=filename, auto_open=False)
-        
-

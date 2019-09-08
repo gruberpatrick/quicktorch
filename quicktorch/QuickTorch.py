@@ -1,13 +1,11 @@
-
 import torch
 import math
 import numpy as np
 from torchviz import make_dot
-import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import time
 import os
-from tensorboard import default, program
+
 
 ##########################################################################
 class QuickTorch(torch.nn.Module):
@@ -17,8 +15,8 @@ class QuickTorch(torch.nn.Module):
     _tensors = {}
     _step = 0
     _batch_size = 32
-    _lr = .001
-    _decay_rate = .5
+    _lr = 0.001
+    _decay_rate = 0.5
     _decay_steps = 10000
     _optimizer = None
     _decay = False
@@ -35,7 +33,7 @@ class QuickTorch(torch.nn.Module):
         "acc_epoch": [],
         "acc_batch": [],
         "acc_validation": [],
-        "lr": []
+        "lr": [],
     }
     _layers = []
     _env = None
@@ -43,9 +41,19 @@ class QuickTorch(torch.nn.Module):
     _state = None
 
     # --------------------------------------------------------------------
-    def __init__(self, tensors, loss=torch.nn.MSELoss, lr=.001, decay_rate=.5, 
-            decay_steps=10000, decay=False, weight_init=torch.nn.init.xavier_uniform_, 
-            optimizer=torch.optim.Adam, batch_size=32, accuracy=None):
+    def __init__(
+        self,
+        tensors,
+        loss=torch.nn.MSELoss,
+        lr=0.001,
+        decay_rate=0.5,
+        decay_steps=10000,
+        decay=False,
+        weight_init=torch.nn.init.xavier_uniform_,
+        optimizer=torch.optim.Adam,
+        batch_size=32,
+        accuracy=None,
+    ):
         """
         Parameters
         ----------
@@ -88,12 +96,12 @@ class QuickTorch(torch.nn.Module):
         self._loss = loss()
         self._name = type(self).__name__
         self._accuracy = accuracy
-        
+
     # --------------------------------------------------------------------
     def forward(self, input):
         """ Forward definition
 
-        Forward propagation for the model. This function needs to be 
+        Forward propagation for the model. This function needs to be
         overwritten.
 
         Parameters
@@ -126,8 +134,10 @@ class QuickTorch(torch.nn.Module):
         """
 
         for it in tensors:
-            try: weight_init(tensors[it].weight)
-            except: continue
+            try:
+                weight_init(tensors[it].weight)
+            except Exception:
+                continue
 
     # --------------------------------------------------------------------
     def exponentialDecay(self):
@@ -136,9 +146,10 @@ class QuickTorch(torch.nn.Module):
         Adjust current learning rate by applying the exponential decay
         and adjusting the optimizer parameters.
         """
-        
+
         lr = self._lr * pow(self._decay_rate, self._step / self._decay_steps)
-        for param_group in self._optimizer.param_groups: param_group["lr"] = lr
+        for param_group in self._optimizer.param_groups:
+            param_group["lr"] = lr
 
     # -----------------------------------------------------------
     def train(self, x, y):
@@ -166,7 +177,7 @@ class QuickTorch(torch.nn.Module):
         """
 
         self._optimizer.zero_grad()
-        
+
         # training step;
         y_hat = self(x)
         loss = self._loss(y_hat, y)
@@ -176,7 +187,8 @@ class QuickTorch(torch.nn.Module):
 
         # decay;
         self._step += 1
-        if self._decay: self.exponentialDecay()
+        if self._decay:
+            self.exponentialDecay()
         self._stats["lr"].append(np.array([param_group["lr"] for param_group in self._optimizer.param_groups]).mean())
 
         # calculate accuracy;
@@ -186,8 +198,8 @@ class QuickTorch(torch.nn.Module):
             accuracy = correct / len(y)
             return loss.item(), accuracy.item(), y_hat
         elif self._accuracy == "binary":
-            pos = y_hat.data >= .5
-            check = y.data >= .5
+            pos = y_hat.data >= 0.5
+            check = y.data >= 0.5
             correct = pos == check
             return loss.item(), correct.sum().float() / correct.size()[0], y_hat
         else:
@@ -197,7 +209,7 @@ class QuickTorch(torch.nn.Module):
     def test(self, x, y):
         """ Train execution for single batch
 
-        Perform all evaluation steps for a single minibatch and 
+        Perform all evaluation steps for a single minibatch and
         calculate loss. If possible, calculates accuracy.
 
         Parameters
@@ -216,7 +228,7 @@ class QuickTorch(torch.nn.Module):
         y_hat : torch.Tensor
             Output values encoded as pytorch tensor
         """
-        
+
         # calculate loss;
         y_hat = self(x)
         loss = self._loss(y_hat, y)
@@ -228,18 +240,18 @@ class QuickTorch(torch.nn.Module):
             accuracy = correct / len(y)
             return loss.item(), accuracy.item(), y_hat
         elif self._accuracy == "binary":
-            pos = y_hat.data >= .5
-            check = y.data >= .5
+            pos = y_hat.data >= 0.5
+            check = y.data >= 0.5
             correct = pos == check
             return loss.item(), correct.sum().float() / correct.size()[0], y_hat
         else:
             return loss.item(), -1, y_hat
-    
+
     # -----------------------------------------------------------
     def predict(self, x):
         """ Train execution for single batch
 
-        Perform all evaluation steps for a single minibatch and 
+        Perform all evaluation steps for a single minibatch and
         calculate loss. If possible, calculates accuracy.
 
         Parameters
@@ -252,7 +264,7 @@ class QuickTorch(torch.nn.Module):
         y_hat : torch.Tensor
             Output values encoded as pytorch tensor
         """
-        
+
         return self(x)
 
     # -----------------------------------------------------------
@@ -262,7 +274,7 @@ class QuickTorch(torch.nn.Module):
         """
 
         dot = make_dot(self(x), params=dict(self.named_parameters()))
-        dot.render("./output/" + self._name + "/topology.gv", view=False)  
+        dot.render("./output/" + self._name + "/topology.gv", view=False)
 
     # -----------------------------------------------------------
     def epoch(self, x, y, x_validation=[], y_validation=[], epochs=1, save_best="", strict_batchsize=False):
@@ -288,8 +300,10 @@ class QuickTorch(torch.nn.Module):
         """
 
         # create project folder;
-        try: os.mkdir("./output/" + self._name + "/")
-        except: pass
+        try:
+            os.mkdir("./output/" + self._name + "/")
+        except Exception:
+            pass
         print("Creating writer: ", "./output/" + self._name + "/" + self._timestamp + "_tb/")
         self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
 
@@ -298,7 +312,7 @@ class QuickTorch(torch.nn.Module):
         self._total_epochs = epochs
         for epoch in range(self._epoch, self._total_epochs):
 
-            best["trigger"] = ""
+            best["trigger"] = []
 
             self._epoch = epoch
             self._loss_batch_history = []
@@ -310,29 +324,46 @@ class QuickTorch(torch.nn.Module):
             minibatch_count = 0
             for it in batches:
 
-                if strict_batchsize and len(x[ (it)*self._batch_size : (it+1)*self._batch_size ]) < self._batch_size:
+                if (
+                    strict_batchsize
+                    and len(x[(it) * self._batch_size: (it + 1) * self._batch_size]) < self._batch_size
+                ):
                     continue
 
                 data = [
-                    torch.from_numpy(x[ (it)*self._batch_size : (it+1)*self._batch_size ]),
-                    torch.from_numpy(y[ (it)*self._batch_size : (it+1)*self._batch_size ])
+                    torch.from_numpy(x[(it) * self._batch_size: (it + 1) * self._batch_size]),
+                    torch.from_numpy(y[(it) * self._batch_size: (it + 1) * self._batch_size]),
                 ]
                 loss, acc, _ = self.train(data[0], data[1])
-                
-                #self._loss_batch_history.append(loss)
+
+                # self._loss_batch_history.append(loss)
                 self._stats["loss_batch"].append(loss)
                 self._stats["acc_batch"].append(acc)
-                self._writer.add_scalar(self._name + "/loss_batch", self._stats["loss_batch"][-1], (epoch * amount) + minibatch_count)
-                self._writer.add_scalar(self._name + "/acc_batch", self._stats["acc_batch"][-1], (epoch * amount) + minibatch_count)
+                self._writer.add_scalar(
+                    self._name + "/loss_batch", self._stats["loss_batch"][-1], (epoch * amount) + minibatch_count
+                )
+                self._writer.add_scalar(
+                    self._name + "/acc_batch", self._stats["acc_batch"][-1], (epoch * amount) + minibatch_count
+                )
 
                 sum_loss += loss
                 sum_acc += acc
                 minibatch_count += 1
 
-                print("\t\r[%5d / %5d] Batch: %5d of %5d - loss: %8.4f, acc: %8.4f" % \
-                    (epoch+1, epochs, minibatch_count, amount, self._stats["loss_batch"][-1], self._stats["acc_batch"][-1]*100), end="")
+                print(
+                    "\t\r[%5d / %5d] Batch: %5d of %5d - loss: %8.4f, acc: %8.4f"
+                    % (
+                        epoch + 1,
+                        epochs,
+                        minibatch_count,
+                        amount,
+                        self._stats["loss_batch"][-1],
+                        self._stats["acc_batch"][-1] * 100,
+                    ),
+                    end="",
+                )
 
-            #self._loss_epoch_history.append(sum_loss / amount)
+            # self._loss_epoch_history.append(sum_loss / amount)
             self._stats["loss_epoch"].append(sum_loss / amount)
             self._stats["acc_epoch"].append(sum_acc / amount)
             self._writer.add_scalar(self._name + "/loss_epoch", self._stats["loss_epoch"][-1], epoch)
@@ -344,12 +375,14 @@ class QuickTorch(torch.nn.Module):
             for it in range(math.ceil(x_validation.shape[0] / self._batch_size)):
 
                 data = [
-                    torch.from_numpy(x_validation[ (it)*self._batch_size : (it+1)*self._batch_size ]),
-                    torch.from_numpy(y_validation[ (it)*self._batch_size : (it+1)*self._batch_size ])
+                    torch.from_numpy(x_validation[(it) * self._batch_size: (it + 1) * self._batch_size]),
+                    torch.from_numpy(y_validation[(it) * self._batch_size: (it + 1) * self._batch_size]),
                 ]
                 loss, acc, _ = self.test(data[0], data[1])
                 validation_loss.append(loss)
                 validation_acc.append(acc)
+                self._stats["loss_validation"].append(loss)
+                self._stats["acc_validation"].append(acc)
 
             # save the current best scores;
             if self._score > best["acc"]:
@@ -359,7 +392,7 @@ class QuickTorch(torch.nn.Module):
                 best["loss"] = self._stats["loss_epoch"][-1]
                 best["trigger"].append("loss")
             if self._step < best["loss_validation"]:
-                best["loss_validation"] = sself._stats["loss_validation"][-1]
+                best["loss_validation"] = self._stats["loss_validation"][-1]
                 best["trigger"].append("loss_validation")
             if self._step > best["acc_validation"]:
                 best["acc_validation"] = self._stats["acc_validation"][-1]
@@ -369,14 +402,23 @@ class QuickTorch(torch.nn.Module):
                 self.saveModel()
                 print("New model saved...")
 
-            #self._loss_validation_history.append(loss)
+            # self._loss_validation_history.append(loss)
             self._stats["loss_validation"].append(np.array(validation_loss).mean())
             self._stats["acc_validation"].append(np.array(validation_acc).mean())
             self._writer.add_scalar(self._name + "/loss_validation", self._stats["loss_validation"][-1], epoch)
             self._writer.add_scalar(self._name + "/acc_validation", self._stats["acc_validation"][-1], epoch)
 
-            print("\t\r[%5d / %5d] loss: %8.4f, val_loss: %8.4f\tacc: %8.4f, val_acc: %8.4f" % 
-                (epoch+1, epochs, (sum_loss/minibatch_count), loss, self._stats["acc_epoch"][-1]*100, self._stats["acc_validation"][-1]*100))
+            print(
+                "\t\r[%5d / %5d] loss: %8.4f, val_loss: %8.4f\tacc: %8.4f, val_acc: %8.4f"
+                % (
+                    epoch + 1,
+                    epochs,
+                    (sum_loss / minibatch_count),
+                    loss,
+                    self._stats["acc_epoch"][-1] * 100,
+                    self._stats["acc_validation"][-1] * 100,
+                )
+            )
 
     # -----------------------------------------------------------
     def showNNStats(self, attributes=["weight", "bias"]):
@@ -388,8 +430,10 @@ class QuickTorch(torch.nn.Module):
 
         for layer in self._layers:
             for att in attributes:
-                try: self._writer.add_histogram(layer + "_weight", getattr(getattr(self, layer), att))
-                except: pass
+                try:
+                    self._writer.add_histogram(layer + "_weight", getattr(getattr(self, layer), att))
+                except Exception:
+                    pass
 
     # -----------------------------------------------------------
     def saveModel(self):
@@ -400,7 +444,7 @@ class QuickTorch(torch.nn.Module):
         Parameters
         ----------
         path : str
-            The path to where the model will be saved 
+            The path to where the model will be saved
         """
 
         state_dict = {"_state_dict": self.state_dict()}
@@ -423,7 +467,7 @@ class QuickTorch(torch.nn.Module):
         Parameters
         ----------
         path : str
-            The path from where the model will be loaded 
+            The path from where the model will be loaded
         """
 
         state_dict = torch.load(path)
@@ -438,38 +482,19 @@ class QuickTorch(torch.nn.Module):
         self.load_state_dict(state_dict["_state_dict"])
 
     # -----------------------------------------------------------
-    def saveModel(self):
-        """ Save model
-        Save the current model to the given path.
-        Parameters
-        ----------
-        path : str
-            The path to where the model will be saved 
-        """
-
-        state_dict = {"_state_dict": self.state_dict()}
-        state_dict["_step"] = self._step
-        state_dict["_batch_size"] = self._batch_size
-        state_dict["_lr"] = self._lr
-        state_dict["_decay_rate"] = self._decay_rate
-        state_dict["_decay_steps"] = self._decay_steps
-        state_dict["_optimizer"] = self._optimizer
-        state_dict["_decay"] = self._decay
-        state_dict["_stats"] = self._stats
-        torch.save(state_dict, "./output/" + self._name + "/" + self._timestamp + ".model")
-        
-    # -----------------------------------------------------------
-    def run_episode(self):
+    def run_episode(self, episode=None):
 
         print("[ERROR] Function 'run_episode' not implemented.")
-        return
+        return -1, -1
 
     # -----------------------------------------------------------
     def episode(self, episodes, save_best="", load_best=""):
 
         # create project folder;
-        try: os.mkdir("./output/" + self._name + "/")
-        except: pass
+        try:
+            os.mkdir("./output/" + self._name + "/")
+        except Exception:
+            pass
         print("Creating writer: ", "./output/" + self._name + "/" + self._timestamp + "_tb/")
         self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
 
@@ -494,9 +519,11 @@ class QuickTorch(torch.nn.Module):
                     best["trigger"].append("step")
 
                 # output statements;
-                print("[%5d / %5d] Score: %8.4f - Steps: %8.4f - Best Score: %8.4f" % \
-                    ((episode + 1), episodes, self._score, self._step, self._best_score))
-                
+                print(
+                    "[%5d / %5d] Score: %8.4f - Steps: %8.4f - Best Score: %8.4f"
+                    % ((episode + 1), episodes, self._score, self._step, self._best_score)
+                )
+
                 # save best results;
                 if save_best != "" and save_best in best["trigger"]:
                     self.saveModel()
@@ -507,12 +534,13 @@ class QuickTorch(torch.nn.Module):
                         self.loadModel("./output/" + self._name + "/" + self._timestamp + ".model")
                         print("  Model reset...")
                         continue
-                    except: pass
+                    except Exception:
+                        pass
 
                 self._writer.add_scalar(self._name + "/score", self._score, episode)
                 self._writer.add_scalar(self._name + "/steps", self._step, episode)
                 self._writer.add_scalar(self._name + "/loss", loss, episode)
-                #self._writer.add_scalar(self._name + "/acc", acc, episode)
+                # self._writer.add_scalar(self._name + "/acc", acc, episode)
 
-        except KeyboardInterrupt: print(" Finishing...")
-
+        except KeyboardInterrupt:
+            print(" Finishing...")

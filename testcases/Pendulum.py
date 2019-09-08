@@ -1,4 +1,3 @@
-
 import torch
 import unittest
 import sys
@@ -10,7 +9,7 @@ from collections import deque
 import random
 import copy
 
-sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from quicktorch.QuickTorch import QuickTorch
 from quicktorch.Utils import Utils
 
@@ -38,12 +37,13 @@ class OUNoise:
         self.state = x + dx
         return self.state
 
+
 ##########################################################################
 class Pendulum(QuickTorch):
 
     _epsilon = 1.0
     _epsilon_min = 0.01
-    _epsilon_decay = .998
+    _epsilon_decay = 0.998
     _mem = deque(maxlen=2000)
     _hist = []
     _state = []
@@ -57,16 +57,20 @@ class Pendulum(QuickTorch):
         self._action_size = 1
         self._state_size = self._env.observation_space.shape[0]
 
-        super(Pendulum, self).__init__({
-
-            "relu": torch.nn.ReLU(),
-            "fc1" : torch.nn.Linear(self._state_size, 32),
-            "fc2" : torch.nn.Linear(32, 64),
-            "fc3" : torch.nn.Linear(64, 32),
-            "fc4" : torch.nn.Linear(32, self._action_size),
-            "relu" : torch.nn.ReLU()
-
-        }, lr=.001, decay=False, loss=torch.nn.MSELoss, batch_size=100)
+        super(Pendulum, self).__init__(
+            {
+                "relu": torch.nn.ReLU(),
+                "fc1": torch.nn.Linear(self._state_size, 32),
+                "fc2": torch.nn.Linear(32, 64),
+                "fc3": torch.nn.Linear(64, 32),
+                "fc4": torch.nn.Linear(32, self._action_size),
+                "relu": torch.nn.ReLU(),
+            },
+            lr=0.001,
+            decay=False,
+            loss=torch.nn.MSELoss,
+            batch_size=100,
+        )
 
     # --------------------------------------------------------------------
     def forward(self, X):
@@ -101,7 +105,7 @@ class Pendulum(QuickTorch):
         batch_steps = []
         batch_noise = []
 
-        self._stats["actions"] = [0,0,0,0]
+        self._stats["actions"] = [0, 0, 0, 0]
 
         for batch in range(self._batch_size):
 
@@ -120,7 +124,7 @@ class Pendulum(QuickTorch):
                     s = torch.Tensor([state]).float()
                     action = np.array(self(s)[0].tolist())
                 else:
-                    action = np.random.normal(0,1,1)
+                    action = np.random.normal(0, 1, 1)
 
                 noise = self.noise.sample()
                 batch_noise.append(noise)
@@ -144,7 +148,8 @@ class Pendulum(QuickTorch):
                     batch_rewards.append(total_reward)
                     batch_steps.append(steps)
 
-            if self._epsilon > self._epsilon_min: self._epsilon *= self._epsilon_decay
+            if self._epsilon > self._epsilon_min:
+                self._epsilon *= self._epsilon_decay
 
         return batch_states, batch_actions, batch_rewards, batch_steps, batch_noise
 
@@ -173,13 +178,16 @@ class Pendulum(QuickTorch):
     def run_episode(self, episode=0):
 
         batch_states, batch_actions, batch_rewards, batch_steps, batch_noise = self.generateBatches()
-        top_states, top_actions, top_rewards, threshold = self.getBestBatches(batch_states, batch_actions, batch_rewards, percentile=80)
+        top_states, top_actions, top_rewards, threshold = self.getBestBatches(
+            batch_states, batch_actions, batch_rewards, percentile=80
+        )
 
-        if len(top_states) == 0: return -1, -1
+        if len(top_states) == 0:
+            return -1, -1
 
         loss, acc, _ = self.train(
             torch.Tensor(np.array(top_states, dtype=np.float32)).float(),
-            torch.Tensor(np.array(top_actions, dtype=np.float32).reshape(len(top_actions), 1)).float()
+            torch.Tensor(np.array(top_actions, dtype=np.float32).reshape(len(top_actions), 1)).float(),
         )
         self._stats["loss_batch"].append(loss)
         self._stats["acc_batch"].append(acc)
@@ -187,7 +195,8 @@ class Pendulum(QuickTorch):
         self._score = np.mean(top_rewards)
         self._step = np.mean(batch_steps)
         self._threshold = threshold
-        if self._score > self._best_score: self._best_score = self._score
+        if self._score > self._best_score:
+            self._best_score = self._score
 
         self._writer.add_scalar(self._name + "/threshold", self._threshold, episode)
         self._writer.add_scalar(self._name + "/epsilon", self._epsilon, episode)
@@ -200,7 +209,8 @@ class Pendulum(QuickTorch):
         self._stats["loss_batch"] = []
         self._stats["acc_batch"] = []
 
-        if self.noise: self.noise.reset()
+        if self.noise:
+            self.noise.reset()
 
         return mean_loss, mean_acc
 
@@ -217,6 +227,7 @@ class Pendulum(QuickTorch):
 
             state = next_state
             self._env.render()
+
 
 ##########################################################################
 class PendulumTest(unittest.TestCase):
@@ -235,8 +246,10 @@ class PendulumTest(unittest.TestCase):
         qt.noise = self.noise
         qt.episode(2000, save_best="score", load_best="")
 
-        #qt.loadModel("./output/LunarLander/1552254905.model")
-        for runs in range(10): qt.simulate()
+        # qt.loadModel("./output/LunarLander/1552254905.model")
+        for runs in range(10):
+            qt.simulate()
+
 
 ################################################################################
 if __name__ == '__main__':
