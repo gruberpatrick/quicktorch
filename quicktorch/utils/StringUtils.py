@@ -1,9 +1,10 @@
 import re
 
 
-class Utils:
+class StringUtils:
 
     # --------------------------------------------------------------------
+    @staticmethod
     def padding(array, length):
 
         res = array[:]
@@ -19,6 +20,7 @@ class Utils:
         return res
 
     # --------------------------------------------------------------------
+    @staticmethod
     def index(line, word_idx, idx_word, counter):
 
         try:
@@ -37,6 +39,7 @@ class Utils:
         return sentence, counter
 
     # --------------------------------------------------------------------
+    @staticmethod
     def indexColumn(lines):
 
         word_idx = {"[nop]": 0}
@@ -45,7 +48,7 @@ class Utils:
         longest = 0
         x = []
         for line in lines:
-            sentence, counter = Utils.index(line, word_idx, idx_word, counter)
+            sentence, counter = StringUtils.index(line, word_idx, idx_word, counter)
             if not sentence:
                 continue
             x.append(sentence)
