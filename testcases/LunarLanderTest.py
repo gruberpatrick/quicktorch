@@ -1,19 +1,15 @@
 import torch
 import unittest
-import sys
-from os import path
 import numpy as np
 import pandas as pd
 import gym
 from collections import deque
 import random
 
-sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from quicktorch.QuickTorch import QuickTorch
-from quicktorch.Utils import Utils
+from quicktorch.QuickTorchReinforcement import QuickTorchReinforcement
 
 ##########################################################################
-class LunarLander(QuickTorch):
+class LunarLander(QuickTorchReinforcement):
 
     _epsilon = 1.0
     _epsilon_min = 0.01
@@ -38,7 +34,6 @@ class LunarLander(QuickTorch):
                 "fc2": torch.nn.Linear(32, 64),
                 "fc3": torch.nn.Linear(64, 32),
                 "fc4": torch.nn.Linear(32, self._action_size),
-                "relu": torch.nn.ReLU(),
                 "softmax": torch.nn.Softmax(dim=1),
             },
             lr=0.0025,
@@ -214,7 +209,7 @@ class LunarLanderTest(unittest.TestCase):
         qt.episode(2000, save_best="score", load_best="")
 
         # qt.loadModel("./output/LunarLander/1552254905.model")
-        for runs in range(10):
+        for _ in range(10):
             qt.simulate()
 
 
@@ -222,4 +217,3 @@ class LunarLanderTest(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
-

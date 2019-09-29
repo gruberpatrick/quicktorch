@@ -1,10 +1,9 @@
 import os
 import numpy as np
-from QuickTorch import QuickTorch
-from tensorboardX import SummaryWriter
+from quicktorch.QuickTorch import QuickTorch
 
 
-class QTReinforcement(QuickTorch):
+class QuickTorchReinforcement(QuickTorch):
 
     # -----------------------------------------------------------
     def run_episode(self, episode=None):

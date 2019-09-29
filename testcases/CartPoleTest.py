@@ -1,19 +1,16 @@
 import torch
 import unittest
-import sys
-from os import path
 import numpy as np
 import pandas as pd
 import gym
 from collections import deque
 import random
 
-sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from quicktorch.QuickTorch import QuickTorch
-from quicktorch.Utils import Utils
+from quicktorch.QuickTorchReinforcement import QuickTorchReinforcement
+
 
 ##########################################################################
-class CartPole(QuickTorch):
+class CartPole(QuickTorchReinforcement):
 
     _epsilon = 1.0
     _epsilon_min = 0.01
@@ -36,7 +33,6 @@ class CartPole(QuickTorch):
                 "relu": torch.nn.ReLU(),
                 "fc1": torch.nn.Linear(self._state_size, 200),
                 "fc2": torch.nn.Linear(200, self._action_size),
-                "relu": torch.nn.ReLU(),
                 "softmax": torch.nn.Softmax(dim=1),
             },
             lr=0.0025,

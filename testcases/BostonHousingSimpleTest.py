@@ -1,13 +1,11 @@
 import torch
 import unittest
-import sys
-from os import path
 from keras.datasets import boston_housing
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 
-sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from quicktorch.QuickTorch import QuickTorch
+
 
 ##########################################################################
 class BostonHousingSimpleTest(QuickTorch):

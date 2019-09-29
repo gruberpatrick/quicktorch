@@ -1,13 +1,10 @@
 import torch
 import unittest
-import sys
-from os import path
 import numpy as np
 import pandas as pd
 
-sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from quicktorch import QuickTorch
-from quicktorch import StringUtils
+from quicktorch.QuickTorch import QuickTorch
+from quicktorch.utils.StringUtils import StringUtils
 
 ##########################################################################
 class ReviewLSTMTest(QuickTorch):

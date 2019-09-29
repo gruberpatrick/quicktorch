@@ -1,17 +1,12 @@
 import torch
 import unittest
-import sys
-from os import path
 import numpy as np
-import pandas as pd
 import gym
 from collections import deque
-import random
 import copy
 
-sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from quicktorch.QuickTorch import QuickTorch
-from quicktorch.Utils import Utils
+from quicktorch.QuickTorchReinforcement import QuickTorchReinforcement
+
 
 ##########################################################################
 class OUNoise:
@@ -39,7 +34,7 @@ class OUNoise:
 
 
 ##########################################################################
-class Pendulum(QuickTorch):
+class Pendulum(QuickTorchReinforcement):
 
     _epsilon = 1.0
     _epsilon_min = 0.01
@@ -61,10 +56,8 @@ class Pendulum(QuickTorch):
             {
                 "relu": torch.nn.ReLU(),
                 "fc1": torch.nn.Linear(self._state_size, 32),
-                "fc2": torch.nn.Linear(32, 64),
-                "fc3": torch.nn.Linear(64, 32),
-                "fc4": torch.nn.Linear(32, self._action_size),
-                "relu": torch.nn.ReLU(),
+                "fc2": torch.nn.Linear(32, 16),
+                "fc3": torch.nn.Linear(16, self._action_size),
             },
             lr=0.001,
             decay=False,
@@ -82,9 +75,6 @@ class Pendulum(QuickTorch):
         X = self.relu(X)
 
         X = self.fc3(X)
-        X = self.relu(X)
-
-        X = self.fc4(X)
 
         return X
 
@@ -255,4 +245,3 @@ class PendulumTest(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
-
