@@ -1,13 +1,10 @@
 import torch
 import unittest
-import sys
-from os import path
 import numpy as np
 import pandas as pd
 
-sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from quicktorch.QuickTorch import QuickTorch
-from quicktorch.Utils import Utils
+from quicktorch.utils.StringUtils import StringUtils
 
 ##########################################################################
 class ReviewLSTMTest(QuickTorch):
@@ -114,10 +111,10 @@ class LSTMTest(unittest.TestCase):
             else:
                 y.append(0)
         # y = y.reshape((y.shape[0], 1))
-        x, word_idx, idx_word, counter, longest = Utils.indexColumn(text)
-        x_train = np.array(Utils.padding(x[:13000], 128), dtype=np.int64)
+        x, word_idx, idx_word, counter, longest = StringUtils.indexColumn(text)
+        x_train = np.array(StringUtils.padding(x[:13000], 128), dtype=np.int64)
         y_train = np.array(y[:13000], dtype=np.int64)
-        x_test = np.array(Utils.padding(x[13000:14900], 128), dtype=np.int64)
+        x_test = np.array(StringUtils.padding(x[13000:14900], 128), dtype=np.int64)
         y_test = np.array(y[13000:14900], dtype=np.int64)
 
         # NN handler;

@@ -1,7 +1,5 @@
 import torch
 import unittest
-import sys
-from os import path
 from keras.datasets import boston_housing
 from sklearn.preprocessing import StandardScaler
 import numpy as np
