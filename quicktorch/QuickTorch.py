@@ -300,7 +300,7 @@ class QuickTorch(torch.nn.Module):
                     pass
 
     # -----------------------------------------------------------
-    def saveModel(self, path):
+    def saveModel(self, path=None):
         """ Save model
 
         Save the current model to the given path.
