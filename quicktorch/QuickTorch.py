@@ -1,7 +1,6 @@
 import torch
 import math
 import numpy as np
-from torchviz import make_dot
 from tensorboardX import SummaryWriter
 import time
 import os
@@ -12,6 +11,11 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
+try:
+    from torchviz import make_dot
+except:
+    log.warning("Library 'torchviz' is not available. Model plotting not available.")
+    pass
 
 ##########################################################################
 class QuickTorch(torch.nn.Module):
@@ -280,6 +284,9 @@ class QuickTorch(torch.nn.Module):
         """ Visualize network
         Exports a PDF displaying the neural network strcuture.
         """
+
+        if not make_dot:
+            return
 
         dot = make_dot(self(x), params=dict(self.named_parameters()))
         dot.render("./output/" + self._name + "/topology.gv", view=False)
