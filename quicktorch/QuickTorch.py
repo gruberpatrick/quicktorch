@@ -27,7 +27,6 @@ class QuickTorch(torch.nn.Module):
     _optimizer = None
     _decay = False
     _loss_epoch_history = []
-    _loss_batch_history = []
     _loss_validation_history = []
     _graph_group_size = 10
     _writer = None
@@ -364,7 +363,30 @@ class QuickTorch(torch.nn.Module):
         self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
 
     # -----------------------------------------------------------
-    def epoch(self, x, y, x_validation=[], y_validation=[], epochs=1, save_best="", strict_batchsize=False):
+    def getBatches(self, x, y, strict_batchsize):
+
+        amount = math.ceil(x.shape[0] / self._batch_size)
+        batches = list(range(amount))
+        np.random.shuffle(batches)
+        minibatch_count = 1
+
+        for it in batches:
+
+            if (
+                strict_batchsize
+                and len(x[(it) * self._batch_size: (it + 1) * self._batch_size]) < self._batch_size
+            ):
+                return False
+
+            yield minibatch_count, (
+                torch.from_numpy(x[(it) * self._batch_size: (it + 1) * self._batch_size]),
+                torch.from_numpy(y[(it) * self._batch_size: (it + 1) * self._batch_size]),
+            )
+
+            minibatch_count += 1
+
+    # -----------------------------------------------------------
+    def epoch(self, x, y=None, x_validation=[], y_validation=[], epochs=1, save_best="", strict_batchsize=False):
         """ Train execution for entire data set
 
         Create minibatchces and call train function. Keeps track of
@@ -398,28 +420,19 @@ class QuickTorch(torch.nn.Module):
             best["trigger"] = []
 
             self._epoch = epoch
-            self._loss_batch_history = []
+            batches = (
+                self.getBatches(x, y, strict_batchsize)
+                if isinstance(torch.utils.data.DataLoader, x) and not y else
+                enumerate(x, 1)
+            )
             amount = math.ceil(x.shape[0] / self._batch_size)
-            batches = list(range(amount))
-            np.random.shuffle(batches)
             sum_loss = 0
             sum_acc = 0
-            minibatch_count = 0
-            for it in batches:
 
-                if (
-                    strict_batchsize
-                    and len(x[(it) * self._batch_size: (it + 1) * self._batch_size]) < self._batch_size
-                ):
-                    continue
+            for minibatch_count, (x, y) in batches:
 
-                data = [
-                    torch.from_numpy(x[(it) * self._batch_size: (it + 1) * self._batch_size]),
-                    torch.from_numpy(y[(it) * self._batch_size: (it + 1) * self._batch_size]),
-                ]
-                loss, acc, _ = self.train(data[0], data[1])
+                loss, acc, _ = self.train(x, y)
 
-                # self._loss_batch_history.append(loss)
                 self._stats["loss_batch"].append(loss)
                 self._stats["acc_batch"].append(acc)
                 self._writer.add_scalar(
@@ -431,7 +444,6 @@ class QuickTorch(torch.nn.Module):
 
                 sum_loss += loss
                 sum_acc += acc
-                minibatch_count += 1
 
                 logger.debug(
                     "\t\r[%5d / %5d] Batch: %5d of %5d - loss: %8.4f, acc: %8.4f"
@@ -455,13 +467,14 @@ class QuickTorch(torch.nn.Module):
 
             validation_loss = []
             validation_acc = []
-            for it in range(math.ceil(x_validation.shape[0] / self._batch_size)):
+            batches = (
+                self.getBatches(x_validation, y_validation, strict_batchsize)
+                if isinstance(torch.utils.data.DataLoader, x_validation) and not y_validation else
+                enumerate(x_validation, 1)
+            )
+            for minibatch_count, (x_val, y_val) in batches:
 
-                data = [
-                    torch.from_numpy(x_validation[(it) * self._batch_size: (it + 1) * self._batch_size]),
-                    torch.from_numpy(y_validation[(it) * self._batch_size: (it + 1) * self._batch_size]),
-                ]
-                loss, acc, _ = self.test(data[0], data[1])
+                loss, acc, _ = self.test(x_val, y_val)
                 validation_loss.append(loss)
                 validation_acc.append(acc)
                 self._stats["loss_validation"].append(loss)
