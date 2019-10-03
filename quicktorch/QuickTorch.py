@@ -5,6 +5,12 @@ from torchviz import make_dot
 from tensorboardX import SummaryWriter
 import time
 import os
+import sys
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 ##########################################################################
@@ -118,7 +124,7 @@ class QuickTorch(torch.nn.Module):
             Returns the modified tensor after forward propagation
         """
 
-        print("[ERROR] Function 'forward' not implemented.")
+        logger.exception("[ERROR] Function 'forward' not implemented.")
         return input
 
     # --------------------------------------------------------------------
@@ -295,7 +301,7 @@ class QuickTorch(torch.nn.Module):
                     pass
 
     # -----------------------------------------------------------
-    def saveModel(self):
+    def saveModel(self, path):
         """ Save model
 
         Save the current model to the given path.
@@ -315,7 +321,10 @@ class QuickTorch(torch.nn.Module):
         state_dict["_optimizer"] = self._optimizer
         state_dict["_decay"] = self._decay
         state_dict["_stats"] = self._stats
-        torch.save(state_dict, "./output/" + self._name + "/" + self._timestamp + ".model")
+        if not path:
+            torch.save(state_dict, "./output/" + self._name + "/" + self._timestamp + ".model")
+        else:
+            torch.save(state_dict, path + self._timestamp + ".model")
 
     # -----------------------------------------------------------
     def loadModel(self, path):
@@ -351,7 +360,7 @@ class QuickTorch(torch.nn.Module):
             os.mkdir("./output/" + self._name + "/")
         except Exception:
             pass
-        print("Creating writer: ", "./output/" + self._name + "/" + self._timestamp + "_tb/")
+        logger.debug("Creating writer: ", "./output/" + self._name + "/" + self._timestamp + "_tb/")
         self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
 
     # -----------------------------------------------------------
@@ -424,7 +433,7 @@ class QuickTorch(torch.nn.Module):
                 sum_acc += acc
                 minibatch_count += 1
 
-                print(
+                logger.debug(
                     "\t\r[%5d / %5d] Batch: %5d of %5d - loss: %8.4f, acc: %8.4f"
                     % (
                         epoch + 1,
@@ -474,7 +483,7 @@ class QuickTorch(torch.nn.Module):
 
             if save_best != "" and save_best in best["trigger"]:
                 self.saveModel()
-                print("New model saved...")
+                logger.debug("New model saved...")
 
             # self._loss_validation_history.append(loss)
             self._stats["loss_validation"].append(np.array(validation_loss).mean())
@@ -482,7 +491,7 @@ class QuickTorch(torch.nn.Module):
             self._writer.add_scalar(self._name + "/loss_validation", self._stats["loss_validation"][-1], epoch)
             self._writer.add_scalar(self._name + "/acc_validation", self._stats["acc_validation"][-1], epoch)
 
-            print(
+            logger.debug(
                 "\t\r[%5d / %5d] loss: %8.4f, val_loss: %8.4f\tacc: %8.4f, val_acc: %8.4f"
                 % (
                     epoch + 1,

@@ -1,6 +1,11 @@
-import os
+import sys
 import numpy as np
+import logging
 from quicktorch.QuickTorch import QuickTorch
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class QuickTorchReinforcement(QuickTorch):
@@ -8,7 +13,7 @@ class QuickTorchReinforcement(QuickTorch):
     # -----------------------------------------------------------
     def run_episode(self, episode=None):
 
-        print("[ERROR] Function 'run_episode' not implemented.")
+        logger.exception("[ERROR] Function 'run_episode' not implemented.")
         return -1, -1
 
     # -----------------------------------------------------------
@@ -37,7 +42,7 @@ class QuickTorchReinforcement(QuickTorch):
                     best["trigger"].append("step")
 
                 # output statements;
-                print(
+                logger.debug(
                     "[%5d / %5d] Score: %8.4f - Steps: %8.4f - Best Score: %8.4f"
                     % ((episode + 1), episodes, self._score, self._step, self._best_score)
                 )
@@ -45,12 +50,12 @@ class QuickTorchReinforcement(QuickTorch):
                 # save best results;
                 if save_best != "" and save_best in best["trigger"]:
                     self.saveModel()
-                    print("  New model saved...")
+                    logger.debug("  New model saved...")
 
                 if load_best == "score" and self._score < best["score"]:
                     try:
                         self.loadModel("./output/" + self._name + "/" + self._timestamp + ".model")
-                        print("  Model reset...")
+                        logger.debug("  Model reset...")
                         continue
                     except Exception:
                         pass
@@ -60,4 +65,4 @@ class QuickTorchReinforcement(QuickTorch):
                 self._writer.add_scalar(self._name + "/loss", loss, episode)
 
         except KeyboardInterrupt:
-            print(" Finishing...")
+            logger.debug(" Finishing...")
