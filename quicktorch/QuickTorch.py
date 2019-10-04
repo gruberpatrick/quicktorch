@@ -48,6 +48,8 @@ class QuickTorch(torch.nn.Module):
     _env = None
     _score = 0
     _state = None
+    _device = None
+    _path = None
 
     # --------------------------------------------------------------------
     def __init__(
@@ -62,6 +64,8 @@ class QuickTorch(torch.nn.Module):
         optimizer=torch.optim.Adam,
         batch_size=32,
         accuracy=None,
+        device=None,
+        path=None,
     ):
         """
         Parameters
@@ -105,6 +109,8 @@ class QuickTorch(torch.nn.Module):
         self._loss = loss()
         self._name = type(self).__name__
         self._accuracy = accuracy
+        self._device = device
+        self._path = path
 
         # overwrite the timestamp, to make it usable in a notebook;
         self._timestamp = str(int(time.time()))
@@ -327,11 +333,15 @@ class QuickTorch(torch.nn.Module):
         state_dict["_optimizer"] = self._optimizer
         state_dict["_decay"] = self._decay
         state_dict["_stats"] = self._stats
-        if not path:
-            torch.save(state_dict, "./output/" + self._name + "/" + self._timestamp + ".model")
-        else:
-            final_path = os.path.join(path, self._timestamp + ".model")
-            torch.save(state_dict, final_path)
+
+        final_path = "./output/" + self._name + "/" + self._timestamp + ".model"
+
+        if self._path:
+            final_path = os.path.join(self._path, self._name + "/" + self._timestamp + ".model")
+        elif path:
+            final_path = os.path.join(path, self._name + "/" + self._timestamp + ".model")
+
+        torch.save(state_dict, final_path)
 
     # -----------------------------------------------------------
     def loadModel(self, path):
@@ -367,8 +377,13 @@ class QuickTorch(torch.nn.Module):
             os.mkdir("./output/" + self._name + "/")
         except Exception:
             pass
-        logger.debug("Creating writer: \"./output/" + self._name + "/" + self._timestamp + "_tb/\"")
-        self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
+
+        path = "./output/" + self._name + "/" + self._timestamp + "_tb/"
+        if self._path:
+            path = os.path.join(self._path, self._name + "/" + self._timestamp + "_tb/")
+
+        logger.debug("Creating writer: \"{}\"".format(path))
+        self._writer = SummaryWriter(log_dir=path)
 
     # -----------------------------------------------------------
     def getBatches(self, x, y, strict_batchsize):
@@ -441,6 +456,9 @@ class QuickTorch(torch.nn.Module):
 
             for minibatch_count, (x_train, y_train) in batches:
 
+                if self._device:
+                    x_train, y_train = x_train.to(self._device), y_train.to(self._device)
+
                 loss, acc, _ = self.train(x_train, y_train)
 
                 self._stats["loss_batch"].append(loss)
@@ -481,7 +499,11 @@ class QuickTorch(torch.nn.Module):
                 if isinstance(x_validation, torch.utils.data.DataLoader) and not y_validation else
                 self.getBatches(x_validation, y_validation, strict_batchsize)
             )
+
             for minibatch_count, (x_val, y_val) in batches:
+
+                if self._device:
+                    x_val, y_val = x_val.to(self._device), y_val.to(self._device)
 
                 loss, acc, _ = self.test(x_val, y_val)
                 validation_loss.append(loss)
