@@ -325,7 +325,7 @@ class QuickTorch(torch.nn.Module):
             The path to where the model will be saved
         """
 
-        state_dict = {"_state_dict": self.cpu().state_dict()}
+        state_dict = {"_state_dict": self.state_dict()}
         state_dict["_step"] = self._step
         state_dict["_batch_size"] = self._batch_size
         state_dict["_lr"] = self._lr
@@ -356,7 +356,7 @@ class QuickTorch(torch.nn.Module):
             The path from where the model will be loaded
         """
 
-        state_dict = torch.load(path)
+        state_dict = torch.load(path, map_location=self._device if self._device else torch.device("cpu"))
         self._step = state_dict["_step"]
         self._batch_size = state_dict["_batch_size"]
         self._lr = state_dict["_lr"]
@@ -440,9 +440,6 @@ class QuickTorch(torch.nn.Module):
         self._epoch = 0
         self._total_epochs = epochs
         for epoch in range(self._epoch, self._total_epochs):
-
-            if self._device:
-                self.to(self._device)
 
             best["trigger"] = []
 
