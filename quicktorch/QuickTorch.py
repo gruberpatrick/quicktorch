@@ -13,8 +13,8 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 try:
     from torchviz import make_dot
-except:
-    log.warning("Library 'torchviz' is not available. Model plotting not available.")
+except Exception:
+    logging.warning("Library 'torchviz' is not available. Model plotting not available.")
     pass
 
 ##########################################################################
@@ -318,7 +318,7 @@ class QuickTorch(torch.nn.Module):
             The path to where the model will be saved
         """
 
-        state_dict = {"_state_dict": self.state_dict()}
+        state_dict = {"_state_dict": self.cpu().state_dict()}
         state_dict["_step"] = self._step
         state_dict["_batch_size"] = self._batch_size
         state_dict["_lr"] = self._lr
@@ -330,7 +330,8 @@ class QuickTorch(torch.nn.Module):
         if not path:
             torch.save(state_dict, "./output/" + self._name + "/" + self._timestamp + ".model")
         else:
-            torch.save(state_dict, path + self._timestamp + ".model")
+            final_path = os.path.join(path, self._timestamp + ".model")
+            torch.save(state_dict, final_path)
 
     # -----------------------------------------------------------
     def loadModel(self, path):
@@ -455,7 +456,7 @@ class QuickTorch(torch.nn.Module):
                 sum_acc += acc
 
                 logger.debug(
-                    "\t\r[%5d / %5d] Batch: %5d of %5d - loss: %8.4f, acc: %8.4f"
+                    "[%5d / %5d] Batch: %5d of %5d - loss: %8.4f, acc: %8.4f"
                     % (
                         epoch + 1,
                         epochs,
