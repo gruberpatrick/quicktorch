@@ -17,6 +17,7 @@ except Exception:
     logging.warning("Library 'torchviz' is not available. Model plotting not available.")
     pass
 
+
 ##########################################################################
 class QuickTorch(torch.nn.Module):
 
@@ -439,6 +440,9 @@ class QuickTorch(torch.nn.Module):
         self._epoch = 0
         self._total_epochs = epochs
         for epoch in range(self._epoch, self._total_epochs):
+
+            if self._device:
+                self.to(self._device)
 
             best["trigger"] = []
 
