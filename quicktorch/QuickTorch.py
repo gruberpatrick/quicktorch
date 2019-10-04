@@ -366,7 +366,7 @@ class QuickTorch(torch.nn.Module):
             os.mkdir("./output/" + self._name + "/")
         except Exception:
             pass
-        logger.debug("Creating writer: ", "./output/" + self._name + "/" + self._timestamp + "_tb/")
+        logger.debug("Creating writer: \"./output/" + self._name + "/" + self._timestamp + "_tb/\"")
         self._writer = SummaryWriter(log_dir="./output/" + self._name + "/" + self._timestamp + "_tb/")
 
     # -----------------------------------------------------------
@@ -427,18 +427,20 @@ class QuickTorch(torch.nn.Module):
             best["trigger"] = []
 
             self._epoch = epoch
-            batches = (
-                self.getBatches(x, y, strict_batchsize)
-                if isinstance(torch.utils.data.DataLoader, x) and not y else
-                enumerate(x, 1)
-            )
-            amount = math.ceil(x.shape[0] / self._batch_size)
+
+            if isinstance(x, torch.utils.data.DataLoader) and not y:
+                batches = enumerate(x, 1)
+                amount = math.ceil(len(x.sampler) / self._batch_size)
+            else:
+                batches = self.getBatches(x, y, strict_batchsize)
+                amount = math.ceil(x.shape[0] / self._batch_size)
+
             sum_loss = 0
             sum_acc = 0
 
-            for minibatch_count, (x, y) in batches:
+            for minibatch_count, (x_train, y_train) in batches:
 
-                loss, acc, _ = self.train(x, y)
+                loss, acc, _ = self.train(x_train, y_train)
 
                 self._stats["loss_batch"].append(loss)
                 self._stats["acc_batch"].append(acc)
@@ -461,8 +463,7 @@ class QuickTorch(torch.nn.Module):
                         amount,
                         self._stats["loss_batch"][-1],
                         self._stats["acc_batch"][-1] * 100,
-                    ),
-                    end="",
+                    )
                 )
 
             # self._loss_epoch_history.append(sum_loss / amount)
@@ -475,17 +476,20 @@ class QuickTorch(torch.nn.Module):
             validation_loss = []
             validation_acc = []
             batches = (
-                self.getBatches(x_validation, y_validation, strict_batchsize)
-                if isinstance(torch.utils.data.DataLoader, x_validation) and not y_validation else
                 enumerate(x_validation, 1)
+                if isinstance(x_validation, torch.utils.data.DataLoader) and not y_validation else
+                self.getBatches(x_validation, y_validation, strict_batchsize)
             )
             for minibatch_count, (x_val, y_val) in batches:
 
                 loss, acc, _ = self.test(x_val, y_val)
                 validation_loss.append(loss)
                 validation_acc.append(acc)
-                self._stats["loss_validation"].append(loss)
-                self._stats["acc_validation"].append(acc)
+
+            self._stats["loss_validation"].append(np.array(validation_loss).mean())
+            self._stats["acc_validation"].append(np.array(validation_acc).mean())
+            self._writer.add_scalar(self._name + "/loss_validation", self._stats["loss_validation"][-1], epoch)
+            self._writer.add_scalar(self._name + "/acc_validation", self._stats["acc_validation"][-1], epoch)
 
             # save the current best scores;
             if self._score > best["acc"]:
@@ -505,19 +509,13 @@ class QuickTorch(torch.nn.Module):
                 self.saveModel()
                 logger.debug("New model saved...")
 
-            # self._loss_validation_history.append(loss)
-            self._stats["loss_validation"].append(np.array(validation_loss).mean())
-            self._stats["acc_validation"].append(np.array(validation_acc).mean())
-            self._writer.add_scalar(self._name + "/loss_validation", self._stats["loss_validation"][-1], epoch)
-            self._writer.add_scalar(self._name + "/acc_validation", self._stats["acc_validation"][-1], epoch)
-
             logger.debug(
-                "\t\r[%5d / %5d] loss: %8.4f, val_loss: %8.4f\tacc: %8.4f, val_acc: %8.4f"
+                "[%5d / %5d] loss: %8.4f, val_loss: %8.4f\tacc: %8.4f, val_acc: %8.4f"
                 % (
                     epoch + 1,
                     epochs,
-                    (sum_loss / minibatch_count),
-                    loss,
+                    self._stats["loss_epoch"][-1],
+                    self._stats["loss_validation"][-1],
                     self._stats["acc_epoch"][-1] * 100,
                     self._stats["acc_validation"][-1] * 100,
                 )
