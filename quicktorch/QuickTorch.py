@@ -400,7 +400,7 @@ class QuickTorch(torch.nn.Module):
 
             if (
                 strict_batchsize
-                and len(x[(it) * self._batch_size: (it + 1) * self._batch_size]) != self._batch_size
+                and x[(it) * self._batch_size: (it + 1) * self._batch_size].shape[0] != self._batch_size
             ):
                 continue
 
@@ -493,28 +493,6 @@ class QuickTorch(torch.nn.Module):
             self._writer.add_scalar(self._name + "/acc_epoch", self._stats["acc_epoch"][-1], epoch)
             self._writer.add_scalar(self._name + "/lr", self._stats["lr"][-1], epoch)
 
-            validation_loss = []
-            validation_acc = []
-            batches = (
-                enumerate(x_validation, 1)
-                if isinstance(x_validation, torch.utils.data.DataLoader) and not y_validation else
-                self.getBatches(x_validation, y_validation, strict_batchsize)
-            )
-
-            for minibatch_count, (x_val, y_val) in batches:
-
-                if self._device:
-                    x_val, y_val = x_val.to(self._device), y_val.to(self._device)
-
-                loss, acc, _ = self.test(x_val, y_val)
-                validation_loss.append(loss)
-                validation_acc.append(acc)
-
-            self._stats["loss_validation"].append(np.array(validation_loss).mean())
-            self._stats["acc_validation"].append(np.array(validation_acc).mean())
-            self._writer.add_scalar(self._name + "/loss_validation", self._stats["loss_validation"][-1], epoch)
-            self._writer.add_scalar(self._name + "/acc_validation", self._stats["acc_validation"][-1], epoch)
-
             # save the current best scores;
             if self._score > best["acc"]:
                 best["acc"] = self._stats["acc_epoch"][-1]
@@ -522,12 +500,38 @@ class QuickTorch(torch.nn.Module):
             if self._step < best["loss"]:
                 best["loss"] = self._stats["loss_epoch"][-1]
                 best["trigger"].append("loss")
-            if self._step < best["loss_validation"]:
-                best["loss_validation"] = self._stats["loss_validation"][-1]
-                best["trigger"].append("loss_validation")
-            if self._step > best["acc_validation"]:
-                best["acc_validation"] = self._stats["acc_validation"][-1]
-                best["trigger"].append("acc_validation")
+
+            if x_validation:
+
+                validation_loss = []
+                validation_acc = []
+                batches = (
+                    enumerate(x_validation, 1)
+                    if isinstance(x_validation, torch.utils.data.DataLoader) and not y_validation else
+                    self.getBatches(x_validation, y_validation, strict_batchsize)
+                )
+
+                for minibatch_count, (x_val, y_val) in batches:
+
+                    if self._device:
+                        x_val, y_val = x_val.to(self._device), y_val.to(self._device)
+
+                    loss, acc, _ = self.test(x_val, y_val)
+                    validation_loss.append(loss)
+                    validation_acc.append(acc)
+
+                self._stats["loss_validation"].append(np.array(validation_loss).mean())
+                self._stats["acc_validation"].append(np.array(validation_acc).mean())
+                self._writer.add_scalar(self._name + "/loss_validation", self._stats["loss_validation"][-1], epoch)
+                self._writer.add_scalar(self._name + "/acc_validation", self._stats["acc_validation"][-1], epoch)
+
+                # save the current best validation scores;
+                if self._step < best["loss_validation"]:
+                    best["loss_validation"] = self._stats["loss_validation"][-1]
+                    best["trigger"].append("loss_validation")
+                if self._step > best["acc_validation"]:
+                    best["acc_validation"] = self._stats["acc_validation"][-1]
+                    best["trigger"].append("acc_validation")
 
             if save_best != "" and save_best in best["trigger"]:
                 self.saveModel()
@@ -539,8 +543,8 @@ class QuickTorch(torch.nn.Module):
                     epoch + 1,
                     epochs,
                     self._stats["loss_epoch"][-1],
-                    self._stats["loss_validation"][-1],
+                    self._stats["loss_validation"][-1] if x_validation else -1,
                     self._stats["acc_epoch"][-1] * 100,
-                    self._stats["acc_validation"][-1] * 100,
+                    self._stats["acc_validation"][-1] * 100 if x_validation else -1,
                 )
             )
