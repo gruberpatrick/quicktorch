@@ -392,22 +392,22 @@ class QuickTorch(torch.nn.Module):
         amount = math.ceil(x.shape[0] / self._batch_size)
         batches = list(range(amount))
         np.random.shuffle(batches)
-        minibatch_count = 1
+        minibatch_count = 0
 
         for it in batches:
 
+            minibatch_count += 1
+
             if (
                 strict_batchsize
-                and len(x[(it) * self._batch_size: (it + 1) * self._batch_size]) < self._batch_size
+                and len(x[(it) * self._batch_size: (it + 1) * self._batch_size]) != self._batch_size
             ):
-                return False
+                continue
 
             yield minibatch_count, (
                 torch.from_numpy(x[(it) * self._batch_size: (it + 1) * self._batch_size]),
                 torch.from_numpy(y[(it) * self._batch_size: (it + 1) * self._batch_size]),
             )
-
-            minibatch_count += 1
 
     # -----------------------------------------------------------
     def epoch(self, x, y=None, x_validation=[], y_validation=[], epochs=1, save_best="", strict_batchsize=False):
