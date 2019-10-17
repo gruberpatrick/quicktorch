@@ -502,7 +502,7 @@ class QuickTorch(torch.nn.Module):
                 best["loss"] = self._stats["loss_epoch"][-1]
                 best["trigger"].append("loss")
 
-            if x_validation:
+            if x_validation != [] and x_validation is not None:
 
                 validation_loss = []
                 validation_acc = []
