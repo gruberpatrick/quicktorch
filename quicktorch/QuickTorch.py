@@ -544,8 +544,8 @@ class QuickTorch(torch.nn.Module):
                     epoch + 1,
                     epochs,
                     self._stats["loss_epoch"][-1],
-                    self._stats["loss_validation"][-1] if x_validation else -1,
+                    self._stats["loss_validation"][-1] if len(self._stats["loss_validation"]) > 0 else -1,
                     self._stats["acc_epoch"][-1] * 100,
-                    self._stats["acc_validation"][-1] * 100 if x_validation else -1,
+                    self._stats["acc_validation"][-1] * 100 if len(self._stats["acc_validation"]) > 0 else -1,
                 )
             )
