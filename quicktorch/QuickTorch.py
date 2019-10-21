@@ -388,11 +388,19 @@ class QuickTorch(torch.nn.Module):
         self._writer = SummaryWriter(log_dir=path)
 
     # -----------------------------------------------------------
-    def getBatches(self, x, y, strict_batchsize):
+    def getBatches(self, x, y, strict_batchsize=False, shuffle=True, pad=False):
+
+        pad_size = x.shape[0] % self._batch_size
+        if pad and pad_size != 0:
+            x_shape, y_shape = x.shape, y.shape
+            x_shape[0], y_shape[0] = self._batch_size - pad_size, self._batch_size - pad_size
+            x = np.concatenate([x, np.zeros(x_shape)], axis=0)
+            y = np.concatenate([y, np.zeros(y_shape)], axis=0)
 
         amount = math.ceil(x.shape[0] / self._batch_size)
         batches = list(range(amount))
-        np.random.shuffle(batches)
+        if shuffle:
+            np.random.shuffle(batches)
         minibatch_count = 0
 
         for it in batches:
