@@ -392,7 +392,7 @@ class QuickTorch(torch.nn.Module):
 
         pad_size = x.shape[0] % self._batch_size
         if pad and pad_size != 0:
-            x_shape, y_shape = x.shape, y.shape
+            x_shape, y_shape = list(x.shape), list(y.shape)
             x_shape[0], y_shape[0] = self._batch_size - pad_size, self._batch_size - pad_size
             x = np.concatenate([x, np.zeros(x_shape)], axis=0)
             y = np.concatenate([y, np.zeros(y_shape)], axis=0)
