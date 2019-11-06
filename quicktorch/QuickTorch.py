@@ -172,7 +172,7 @@ class QuickTorch(torch.nn.Module):
             param_group["lr"] = lr
 
     # -----------------------------------------------------------
-    def train(self, x, y):
+    def step(self, x, y):
         """ Train execution for single batch
 
         Perform all training steps for a single minibatch. Calculate loss,
@@ -469,7 +469,7 @@ class QuickTorch(torch.nn.Module):
                 if self._device:
                     x_train, y_train = x_train.to(self._device), y_train.to(self._device)
 
-                loss, acc, _ = self.train(x_train, y_train)
+                loss, acc, _ = self.step(x_train, y_train)
 
                 self._stats["loss_batch"].append(loss)
                 self._stats["acc_batch"].append(acc)
