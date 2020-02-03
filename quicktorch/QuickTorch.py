@@ -503,10 +503,10 @@ class QuickTorch(torch.nn.Module):
             self._writer.add_scalar(self._name + "/lr", self._stats["lr"][-1], epoch)
 
             # save the current best scores;
-            if self._score > best["acc"]:
+            if self._stats["acc_epoch"][-1] > best["acc"]:
                 best["acc"] = self._stats["acc_epoch"][-1]
                 best["trigger"].append("acc")
-            if self._step < best["loss"]:
+            if self._stats["loss_epoch"][-1] < best["loss"]:
                 best["loss"] = self._stats["loss_epoch"][-1]
                 best["trigger"].append("loss")
 
@@ -535,10 +535,10 @@ class QuickTorch(torch.nn.Module):
                 self._writer.add_scalar(self._name + "/acc_validation", self._stats["acc_validation"][-1], epoch)
 
                 # save the current best validation scores;
-                if self._step < best["loss_validation"]:
+                if self._stats["loss_validation"][-1] < best["loss_validation"]:
                     best["loss_validation"] = self._stats["loss_validation"][-1]
                     best["trigger"].append("loss_validation")
-                if self._step > best["acc_validation"]:
+                if self._stats["acc_validation"][-1] > best["acc_validation"]:
                     best["acc_validation"] = self._stats["acc_validation"][-1]
                     best["trigger"].append("acc_validation")
 
