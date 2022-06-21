@@ -1,4 +1,4 @@
-numpy==1.15.2
+numpy==1.22.0
 torch==0.4.0
 torchvision==0.2.1
 torchviz==0.0.1
